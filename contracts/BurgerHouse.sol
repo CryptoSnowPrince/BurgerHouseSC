@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 contract BurgerHouse {
-    struct Tower {
+    struct House {
         uint256 coins;
         uint256 money;
         uint256 money2;
@@ -14,7 +14,7 @@ contract BurgerHouse {
         uint256 refDeps;
         uint8[8] chefs;
     }
-    mapping(address => Tower) public towers;
+    mapping(address => House) public houses;
     uint256 public totalChefs;
     uint256 public totalTowers;
     uint256 public totalInvested;
@@ -25,25 +25,25 @@ contract BurgerHouse {
         require(coins > 0, "Zero coins");
         address user = msg.sender;
         totalInvested += msg.value;
-        if (towers[user].timestamp == 0) {
+        if (houses[user].timestamp == 0) {
             totalTowers++;
-            ref = towers[ref].timestamp == 0 ? manager : ref;
-            towers[ref].refs++;
-            towers[user].ref = ref;
-            towers[user].timestamp = block.timestamp;
+            ref = houses[ref].timestamp == 0 ? manager : ref;
+            houses[ref].refs++;
+            houses[user].ref = ref;
+            houses[user].timestamp = block.timestamp;
         }
-        ref = towers[user].ref;
-        towers[ref].coins += (coins * 7) / 100;
-        towers[ref].money += (coins * 100 * 3) / 100;
-        towers[ref].refDeps += coins;
-        towers[user].coins += coins;
+        ref = houses[user].ref;
+        houses[ref].coins += (coins * 7) / 100;
+        houses[ref].money += (coins * 100 * 3) / 100;
+        houses[ref].refDeps += coins;
+        houses[user].coins += coins;
         payable(manager).transfer((msg.value * 3) / 100);
     }
 
     function withdrawMoney() public {
         address user = msg.sender;
-        uint256 money = towers[user].money;
-        towers[user].money = 0;
+        uint256 money = houses[user].money;
+        houses[user].money = 0;
         uint256 amount = money * 2e11;
         payable(user).transfer(address(this).balance < amount ? address(this).balance : amount);
     }
@@ -51,47 +51,47 @@ contract BurgerHouse {
     function collectMoney() public {
         address user = msg.sender;
         syncTower(user);
-        towers[user].hrs = 0;
-        towers[user].money += towers[user].money2;
-        towers[user].money2 = 0;
+        houses[user].hrs = 0;
+        houses[user].money += houses[user].money2;
+        houses[user].money2 = 0;
     }
 
     function upgradeTower(uint256 floorId) public {
         require(floorId < 8, "Max 8 floors");
         address user = msg.sender;
         syncTower(user);
-        towers[user].chefs[floorId]++;
+        houses[user].chefs[floorId]++;
         totalChefs++;
-        uint256 chefs = towers[user].chefs[floorId];
-        towers[user].coins -= getUpgradePrice(floorId, chefs);
-        towers[user].yield += getYield(floorId, chefs);
+        uint256 chefs = houses[user].chefs[floorId];
+        houses[user].coins -= getUpgradePrice(floorId, chefs);
+        houses[user].yield += getYield(floorId, chefs);
     }
 
     function sellTower() public {
         collectMoney();
         address user = msg.sender;
-        uint8[8] memory chefs = towers[user].chefs;
+        uint8[8] memory chefs = houses[user].chefs;
         totalChefs -= chefs[0] + chefs[1] + chefs[2] + chefs[3] + chefs[4] + chefs[5] + chefs[6] + chefs[7];
-        towers[user].money += towers[user].yield * 24 * 14;
-        towers[user].chefs = [0, 0, 0, 0, 0, 0, 0, 0];
-        towers[user].yield = 0;
+        houses[user].money += houses[user].yield * 24 * 14;
+        houses[user].chefs = [0, 0, 0, 0, 0, 0, 0, 0];
+        houses[user].yield = 0;
     }
 
     function getChefs(address addr) public view returns (uint8[8] memory) {
-        return towers[addr].chefs;
+        return houses[addr].chefs;
     }
 
     function syncTower(address user) internal {
-        require(towers[user].timestamp > 0, "User is not registered");
-        if (towers[user].yield > 0) {
-            uint256 hrs = block.timestamp / 3600 - towers[user].timestamp / 3600;
-            if (hrs + towers[user].hrs > 24) {
-                hrs = 24 - towers[user].hrs;
+        require(houses[user].timestamp > 0, "User is not registered");
+        if (houses[user].yield > 0) {
+            uint256 hrs = block.timestamp / 3600 - houses[user].timestamp / 3600;
+            if (hrs + houses[user].hrs > 24) {
+                hrs = 24 - houses[user].hrs;
             }
-            towers[user].money2 += hrs * towers[user].yield;
-            towers[user].hrs += hrs;
+            houses[user].money2 += hrs * houses[user].yield;
+            houses[user].hrs += hrs;
         }
-        towers[user].timestamp = block.timestamp;
+        houses[user].timestamp = block.timestamp;
     }
 
     function getUpgradePrice(uint256 floorId, uint256 chefId) internal pure returns (uint256) {
