@@ -16,7 +16,7 @@ contract BurgerHouse {
     }
     mapping(address => House) public houses;
     uint256 public totalChefs;
-    uint256 public totalTowers;
+    uint256 public totalHouses;
     uint256 public totalInvested;
     address public manager = msg.sender;
 
@@ -26,7 +26,7 @@ contract BurgerHouse {
         address user = msg.sender;
         totalInvested += msg.value;
         if (houses[user].timestamp == 0) {
-            totalTowers++;
+            totalHouses++;
             ref = houses[ref].timestamp == 0 ? manager : ref;
             houses[ref].refs++;
             houses[user].ref = ref;
@@ -50,16 +50,16 @@ contract BurgerHouse {
 
     function collectMoney() public {
         address user = msg.sender;
-        syncTower(user);
+        syncHouse(user);
         houses[user].hrs = 0;
         houses[user].money += houses[user].money2;
         houses[user].money2 = 0;
     }
 
-    function upgradeTower(uint256 floorId) public {
+    function upgradeHouse(uint256 floorId) public {
         require(floorId < 8, "Max 8 floors");
         address user = msg.sender;
-        syncTower(user);
+        syncHouse(user);
         houses[user].chefs[floorId]++;
         totalChefs++;
         uint256 chefs = houses[user].chefs[floorId];
@@ -67,7 +67,7 @@ contract BurgerHouse {
         houses[user].yield += getYield(floorId, chefs);
     }
 
-    function sellTower() public {
+    function sellHouse() public {
         collectMoney();
         address user = msg.sender;
         uint8[8] memory chefs = houses[user].chefs;
@@ -81,7 +81,7 @@ contract BurgerHouse {
         return houses[addr].chefs;
     }
 
-    function syncTower(address user) internal {
+    function syncHouse(address user) internal {
         require(houses[user].timestamp > 0, "User is not registered");
         if (houses[user].yield > 0) {
             uint256 hrs = block.timestamp / 3600 - houses[user].timestamp / 3600;
