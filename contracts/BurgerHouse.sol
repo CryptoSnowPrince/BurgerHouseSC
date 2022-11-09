@@ -14,6 +14,18 @@ contract BurgerHouse {
         uint256 refCoins;
         uint8[8] levels;
     }
+
+    uint256 public constant COIN_PRICE = 0.00002 ether; // 1 coin = 0.00002 BNB
+    uint256 public constant CASH_PRICE = 0.0000002 ether; // 100 cash = 0.00002 BNB
+
+    // 100: 1%, 10000: 100%
+    uint256 public constant REFERRAL_COIN = 700;
+    uint256 public constant REFERRAL_CASH = 300;
+    uint256 public constant DEV_FEE = 400;
+    uint256 public constant DEV_COIN_FEE = 500;
+    uint256 public constant DEV_CASH_FEE = 500;
+    uint256 public constant DENOMINATOR = 10000;
+
     mapping(address => House) public houses;
     uint256 public totalUpgrades;
     uint256 public totalHouses;
@@ -21,8 +33,10 @@ contract BurgerHouse {
     address public manager = msg.sender;
 
     function addCoins(address _ref) public payable {
-        uint256 coins = msg.value / 2e13;
+        uint256 coins = msg.value / COIN_PRICE;
         require(coins > 0, "Zero coins");
+        uint256 cash = msg.value / CASH_PRICE;
+
         address user = msg.sender;
         totalInvested += msg.value;
         if (houses[user].timestamp == 0) {
@@ -32,20 +46,32 @@ contract BurgerHouse {
             houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
         }
+
         _ref = houses[user].ref;
-        houses[_ref].coins += (coins * 7) / 100;
-        houses[_ref].cash += (coins * 100 * 3) / 100;
+        houses[_ref].coins += (coins * REFERRAL_COIN) / DENOMINATOR;
+        houses[_ref].cash += (cash * REFERRAL_CASH) / DENOMINATOR;
         houses[_ref].refCoins += coins;
+
         houses[user].coins += coins;
-        payable(manager).transfer((msg.value * 3) / 100);
+
+        houses[manager].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
+
+        payable(manager).transfer((msg.value * DEV_FEE) / DENOMINATOR);
     }
 
     function withdrawMoney() public {
         address user = msg.sender;
         uint256 cash = houses[user].cash;
+        uint256 cashFee = (cash * DEV_CASH_FEE) / DENOMINATOR;
+
         houses[user].cash = 0;
-        uint256 amount = cash * 2e11;
+        uint256 amount = (cash - cashFee) * CASH_PRICE;
         payable(user).transfer(
+            address(this).balance < amount ? address(this).balance : amount
+        );
+
+        amount = cashFee * CASH_PRICE;
+        payable(manager).transfer(
             address(this).balance < amount ? address(this).balance : amount
         );
     }
@@ -143,15 +169,20 @@ contract BurgerHouse {
         returns (uint256)
     {
         if (_level == 1)
-            return [123, 390, 1197, 3585, 11250, 34200, 108600, 312000][_houseId];
+            return
+                [123, 390, 1197, 3585, 11250, 34200, 108600, 312000][_houseId];
         if (_level == 2)
-            return [156, 471, 1494, 4590, 14100, 42900, 136500, 379500][_houseId];
+            return
+                [156, 471, 1494, 4590, 14100, 42900, 136500, 379500][_houseId];
         if (_level == 3)
-            return [195, 603, 1875, 5760, 17700, 53700, 171600, 501000][_houseId];
+            return
+                [195, 603, 1875, 5760, 17700, 53700, 171600, 501000][_houseId];
         if (_level == 4)
-            return [246, 792, 2340, 7140, 22200, 68100, 217500, 649500][_houseId];
+            return
+                [246, 792, 2340, 7140, 22200, 68100, 217500, 649500][_houseId];
         if (_level == 5)
-            return [309, 954, 2985, 9015, 27900, 86100, 274500, 825000][_houseId];
+            return
+                [309, 954, 2985, 9015, 27900, 86100, 274500, 825000][_houseId];
         revert("Incorrect _level");
     }
 }
