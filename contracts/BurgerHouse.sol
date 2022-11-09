@@ -35,7 +35,7 @@ contract BurgerHouse {
     uint256 public totalInvested;
     address public manager = msg.sender;
 
-    function addCoins(address _ref) public payable {
+    function addCoins(address _ref) external payable {
         uint256 coins = msg.value / COIN_PRICE;
         require(coins > 0, "Zero coins");
         uint256 cash = msg.value / CASH_PRICE;
@@ -67,7 +67,7 @@ contract BurgerHouse {
             DENOMINATOR;
     }
 
-    function withdrawMoney() public {
+    function withdrawMoney() external {
         address user = msg.sender;
         uint256 cash = houses[user].cash;
         uint256 cashFee = (cash * DEV_CASH_FEE) / DENOMINATOR;
@@ -100,7 +100,7 @@ contract BurgerHouse {
         houses[user].burger = 0;
     }
 
-    function upgradeHouse(uint256 _houseId) public {
+    function upgradeHouse(uint256 _houseId) external {
         require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
         _makeBurgers(user);
@@ -111,7 +111,7 @@ contract BurgerHouse {
         houses[user].yield += getYield(_houseId, level);
     }
 
-    function sellHouse() public {
+    function sellHouse() external {
         collectMoney();
         address user = msg.sender;
         uint8[8] memory levels = houses[user].levels;
@@ -129,7 +129,7 @@ contract BurgerHouse {
         houses[user].yield = 0;
     }
 
-    function getLevels(address addr) public view returns (uint8[8] memory) {
+    function getLevels(address addr) external view returns (uint8[8] memory) {
         return houses[addr].levels;
     }
 
