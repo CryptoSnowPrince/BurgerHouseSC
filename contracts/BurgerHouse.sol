@@ -13,6 +13,8 @@ contract BurgerHouse {
         uint256 refs;
         uint256 refCoins;
         uint8[8] levels;
+        uint256 invested;
+        uint256 withdrawn;
     }
 
     uint256 public constant COIN_PRICE = 0.00002 ether; // 1 coin = 0.00002 BNB
@@ -24,6 +26,7 @@ contract BurgerHouse {
     uint256 public constant DEV_FEE = 400;
     uint256 public constant DEV_COIN_FEE = 500;
     uint256 public constant DEV_CASH_FEE = 500;
+    uint256 public constant LIMIT_INCOME = 15000;
     uint256 public constant DENOMINATOR = 10000;
 
     mapping(address => House) public houses;
@@ -57,6 +60,11 @@ contract BurgerHouse {
         houses[manager].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
 
         payable(manager).transfer((msg.value * DEV_FEE) / DENOMINATOR);
+
+        houses[user].invested += msg.value;
+        houses[_ref].invested +=
+            (msg.value * (REFERRAL_COIN + REFERRAL_CASH)) /
+            DENOMINATOR;
     }
 
     function withdrawMoney() public {
@@ -66,9 +74,17 @@ contract BurgerHouse {
 
         houses[user].cash = 0;
         uint256 amount = (cash - cashFee) * CASH_PRICE;
-        payable(user).transfer(
-            address(this).balance < amount ? address(this).balance : amount
+        require(
+            houses[user].withdrawn + amount <=
+                (houses[user].invested * LIMIT_INCOME) / DENOMINATOR,
+            "Your income is reached to limit, please buy more coin to get more income!"
         );
+        amount = address(this).balance < amount
+            ? address(this).balance
+            : amount;
+        payable(user).transfer(amount);
+
+        houses[user].withdrawn += amount;
 
         amount = cashFee * CASH_PRICE;
         payable(manager).transfer(
