@@ -50,7 +50,7 @@ contract BurgerHouse {
 
     function collectMoney() public {
         address user = msg.sender;
-        _syncHouse(user);
+        _makeBurgers(user);
         houses[user].hrs = 0;
         houses[user].cash += houses[user].burger;
         houses[user].burger = 0;
@@ -59,7 +59,7 @@ contract BurgerHouse {
     function upgradeHouse(uint256 _houseId) public {
         require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
-        _syncHouse(user);
+        _makeBurgers(user);
         houses[user].levels[_houseId]++;
         totalUpgrades++;
         uint256 level = houses[user].levels[_houseId];
@@ -81,7 +81,7 @@ contract BurgerHouse {
         return houses[addr].levels;
     }
 
-    function _syncHouse(address user) internal {
+    function _makeBurgers(address user) internal {
         require(houses[user].timestamp > 0, "User is not registered");
         if (houses[user].yield > 0) {
             uint256 hrs = block.timestamp / 3600 - houses[user].timestamp / 3600;
