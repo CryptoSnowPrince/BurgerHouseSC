@@ -105,7 +105,7 @@ contract BurgerHouse {
     }
 
     function getUpgradePrice(uint256 _houseId, uint256 _level)
-        private
+        public
         pure
         returns (uint256)
     {
