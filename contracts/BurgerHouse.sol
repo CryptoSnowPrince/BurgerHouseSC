@@ -11,7 +11,7 @@ contract BurgerHouse {
         uint256 hrs;
         address ref;
         uint256 refs;
-        uint256 refDeps;
+        uint256 refCoins;
         uint8[8] levels;
     }
     mapping(address => House) public houses;
@@ -20,22 +20,22 @@ contract BurgerHouse {
     uint256 public totalInvested;
     address public manager = msg.sender;
 
-    function addCoins(address ref) public payable {
+    function addCoins(address _ref) public payable {
         uint256 coins = msg.value / 2e13;
         require(coins > 0, "Zero coins");
         address user = msg.sender;
         totalInvested += msg.value;
         if (houses[user].timestamp == 0) {
             totalHouses++;
-            ref = houses[ref].timestamp == 0 ? manager : ref;
-            houses[ref].refs++;
-            houses[user].ref = ref;
+            _ref = houses[_ref].timestamp == 0 ? manager : _ref;
+            houses[_ref].refs++;
+            houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
         }
-        ref = houses[user].ref;
-        houses[ref].coins += (coins * 7) / 100;
-        houses[ref].cash += (coins * 100 * 3) / 100;
-        houses[ref].refDeps += coins;
+        _ref = houses[user].ref;
+        houses[_ref].coins += (coins * 7) / 100;
+        houses[_ref].cash += (coins * 100 * 3) / 100;
+        houses[_ref].refCoins += coins;
         houses[user].coins += coins;
         payable(manager).transfer((msg.value * 3) / 100);
     }
