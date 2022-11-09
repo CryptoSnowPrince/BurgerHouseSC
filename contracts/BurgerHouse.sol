@@ -30,8 +30,8 @@ contract BurgerHouse {
     uint256 public constant DENOMINATOR = 10000;
 
     mapping(address => House) public houses;
+    address[] public allHouses;
     uint256 public totalUpgrades;
-    uint256 public totalHouses;
     uint256 public totalInvested;
     address public manager = msg.sender;
 
@@ -43,7 +43,7 @@ contract BurgerHouse {
         address user = msg.sender;
         totalInvested += msg.value;
         if (houses[user].timestamp == 0) {
-            totalHouses++;
+            allHouses.push(user);
             _ref = houses[_ref].timestamp == 0 ? manager : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
@@ -205,5 +205,9 @@ contract BurgerHouse {
     function setManager(address _manager) external {
         require(msg.sender == manager, "Not manager!");
         manager = _manager;
+    }
+
+    function allHousesLength() external view returns (uint256) {
+        return allHouses.length;
     }
 }
