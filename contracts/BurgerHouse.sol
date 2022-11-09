@@ -132,10 +132,6 @@ contract BurgerHouse {
         houses[user].yield = 0;
     }
 
-    function getLevels(address addr) external view returns (uint8[8] memory) {
-        return houses[addr].levels;
-    }
-
     function _makeBurgers(address user) internal {
         require(houses[user].timestamp > 0, "User is not registered");
         if (houses[user].yield > 0) {
@@ -150,7 +146,7 @@ contract BurgerHouse {
     }
 
     function getUpgradePrice(uint256 _houseId, uint256 _level)
-        public
+        private
         pure
         returns (uint256)
     {
@@ -179,7 +175,7 @@ contract BurgerHouse {
                 [1200, 3600, 11000, 33000, 98800, 293000, 890000, 2500000][
                     _houseId
                 ];
-        revert("Incorrect _level");
+        revert("Incorrect level");
     }
 
     function getYield(uint256 _houseId, uint256 _level)
@@ -202,7 +198,7 @@ contract BurgerHouse {
         if (_level == 5)
             return
                 [309, 954, 2985, 9015, 27900, 86100, 274500, 825000][_houseId];
-        revert("Incorrect _level");
+        revert("Incorrect level");
     }
 
     function setManager(address _manager) external {
