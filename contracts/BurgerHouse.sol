@@ -4,8 +4,8 @@ pragma solidity 0.8.16;
 contract BurgerHouse {
     struct House {
         uint256 coins;
-        uint256 money;
-        uint256 money2;
+        uint256 cash;
+        uint256 burger;
         uint256 yield;
         uint256 timestamp;
         uint256 hrs;
@@ -34,7 +34,7 @@ contract BurgerHouse {
         }
         ref = houses[user].ref;
         houses[ref].coins += (coins * 7) / 100;
-        houses[ref].money += (coins * 100 * 3) / 100;
+        houses[ref].cash += (coins * 100 * 3) / 100;
         houses[ref].refDeps += coins;
         houses[user].coins += coins;
         payable(manager).transfer((msg.value * 3) / 100);
@@ -42,9 +42,9 @@ contract BurgerHouse {
 
     function withdrawMoney() public {
         address user = msg.sender;
-        uint256 money = houses[user].money;
-        houses[user].money = 0;
-        uint256 amount = money * 2e11;
+        uint256 cash = houses[user].cash;
+        houses[user].cash = 0;
+        uint256 amount = cash * 2e11;
         payable(user).transfer(address(this).balance < amount ? address(this).balance : amount);
     }
 
@@ -52,8 +52,8 @@ contract BurgerHouse {
         address user = msg.sender;
         _syncHouse(user);
         houses[user].hrs = 0;
-        houses[user].money += houses[user].money2;
-        houses[user].money2 = 0;
+        houses[user].cash += houses[user].burger;
+        houses[user].burger = 0;
     }
 
     function upgradeHouse(uint256 _houseId) public {
@@ -72,12 +72,12 @@ contract BurgerHouse {
         address user = msg.sender;
         uint8[8] memory levels = houses[user].levels;
         totalUpgrades -= levels[0] + levels[1] + levels[2] + levels[3] + levels[4] + levels[5] + levels[6] + levels[7];
-        houses[user].money += houses[user].yield * 24 * 14;
+        houses[user].cash += houses[user].yield * 24 * 14;
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
     }
 
-    function getChefs(address addr) public view returns (uint8[8] memory) {
+    function getLevels(address addr) public view returns (uint8[8] memory) {
         return houses[addr].levels;
     }
 
@@ -88,13 +88,13 @@ contract BurgerHouse {
             if (hrs + houses[user].hrs > 24) {
                 hrs = 24 - houses[user].hrs;
             }
-            houses[user].money2 += hrs * houses[user].yield;
+            houses[user].burger += hrs * houses[user].yield;
             houses[user].hrs += hrs;
         }
         houses[user].timestamp = block.timestamp;
     }
 
-    function getUpgradePrice(uint256 _houseId, uint256 _level) internal pure returns (uint256) {
+    function getUpgradePrice(uint256 _houseId, uint256 _level) private pure returns (uint256) {
         if (_level == 1) return [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][_houseId];
         if (_level == 2) return [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][_houseId];
         if (_level == 3) return [780, 2300, 7000, 21000, 63000, 187000, 570000, 1560000][_houseId];
@@ -103,7 +103,7 @@ contract BurgerHouse {
         revert("Incorrect _level");
     }
 
-    function getYield(uint256 _houseId, uint256 _level) internal pure returns (uint256) {
+    function getYield(uint256 _houseId, uint256 _level) private pure returns (uint256) {
         if (_level == 1) return [41, 130, 399, 1220, 3750, 11400, 36200, 104000][_houseId];
         if (_level == 2) return [52, 157, 498, 1530, 4700, 14300, 45500, 126500][_houseId];
         if (_level == 3) return [65, 201, 625, 1920, 5900, 17900, 57200, 167000][_houseId];
