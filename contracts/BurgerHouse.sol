@@ -45,7 +45,9 @@ contract BurgerHouse {
         uint256 cash = houses[user].cash;
         houses[user].cash = 0;
         uint256 amount = cash * 2e11;
-        payable(user).transfer(address(this).balance < amount ? address(this).balance : amount);
+        payable(user).transfer(
+            address(this).balance < amount ? address(this).balance : amount
+        );
     }
 
     function collectMoney() public {
@@ -71,7 +73,15 @@ contract BurgerHouse {
         collectMoney();
         address user = msg.sender;
         uint8[8] memory levels = houses[user].levels;
-        totalUpgrades -= levels[0] + levels[1] + levels[2] + levels[3] + levels[4] + levels[5] + levels[6] + levels[7];
+        totalUpgrades -=
+            levels[0] +
+            levels[1] +
+            levels[2] +
+            levels[3] +
+            levels[4] +
+            levels[5] +
+            levels[6] +
+            levels[7];
         houses[user].cash += houses[user].yield * 24 * 14;
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
@@ -84,7 +94,7 @@ contract BurgerHouse {
     function _makeBurgers(address user) internal {
         require(houses[user].timestamp > 0, "User is not registered");
         if (houses[user].yield > 0) {
-            uint256 hrs = block.timestamp / 3600 - houses[user].timestamp / 3600;
+            uint256 hrs = (block.timestamp - houses[user].timestamp) / 3600;
             if (hrs + houses[user].hrs > 24) {
                 hrs = 24 - houses[user].hrs;
             }
@@ -94,21 +104,54 @@ contract BurgerHouse {
         houses[user].timestamp = block.timestamp;
     }
 
-    function getUpgradePrice(uint256 _houseId, uint256 _level) private pure returns (uint256) {
-        if (_level == 1) return [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][_houseId];
-        if (_level == 2) return [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][_houseId];
-        if (_level == 3) return [780, 2300, 7000, 21000, 63000, 187000, 570000, 1560000][_houseId];
-        if (_level == 4) return [970, 3000, 8700, 26000, 79000, 235000, 713000, 2000000][_houseId];
-        if (_level == 5) return [1200, 3600, 11000, 33000, 98000, 293000, 890000, 2500000][_houseId];
+    function getUpgradePrice(uint256 _houseId, uint256 _level)
+        private
+        pure
+        returns (uint256)
+    {
+        if (_level == 1)
+            return
+                [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][
+                    _houseId
+                ];
+        if (_level == 2)
+            return
+                [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][
+                    _houseId
+                ];
+        if (_level == 3)
+            return
+                [780, 2300, 7000, 21000, 63000, 187000, 570000, 1560000][
+                    _houseId
+                ];
+        if (_level == 4)
+            return
+                [970, 3000, 8700, 26000, 79000, 235000, 713000, 2000000][
+                    _houseId
+                ];
+        if (_level == 5)
+            return
+                [1200, 3600, 11000, 33000, 98000, 293000, 890000, 2500000][
+                    _houseId
+                ];
         revert("Incorrect _level");
     }
 
-    function getYield(uint256 _houseId, uint256 _level) private pure returns (uint256) {
-        if (_level == 1) return [41, 130, 399, 1220, 3750, 11400, 36200, 104000][_houseId];
-        if (_level == 2) return [52, 157, 498, 1530, 4700, 14300, 45500, 126500][_houseId];
-        if (_level == 3) return [65, 201, 625, 1920, 5900, 17900, 57200, 167000][_houseId];
-        if (_level == 4) return [82, 264, 780, 2380, 7400, 22700, 72500, 216500][_houseId];
-        if (_level == 5) return [103, 318, 995, 3050, 9300, 28700, 91500, 275000][_houseId];
+    function getYield(uint256 _houseId, uint256 _level)
+        private
+        pure
+        returns (uint256)
+    {
+        if (_level == 1)
+            return [41, 130, 399, 1220, 3750, 11400, 36200, 104000][_houseId];
+        if (_level == 2)
+            return [52, 157, 498, 1530, 4700, 14300, 45500, 126500][_houseId];
+        if (_level == 3)
+            return [65, 201, 625, 1920, 5900, 17900, 57200, 167000][_houseId];
+        if (_level == 4)
+            return [82, 264, 780, 2380, 7400, 22700, 72500, 216500][_houseId];
+        if (_level == 5)
+            return [103, 318, 995, 3050, 9300, 28700, 91500, 275000][_houseId];
         revert("Incorrect _level");
     }
 }
