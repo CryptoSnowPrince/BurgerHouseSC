@@ -201,4 +201,9 @@ contract BurgerHouse {
                 [309, 954, 2985, 9015, 27900, 86100, 274500, 825000][_houseId];
         revert("Incorrect _level");
     }
+
+    function setManager(address _manager) external {
+        require(msg.sender == manager, "Not manager!");
+        manager = _manager;
+    }
 }
