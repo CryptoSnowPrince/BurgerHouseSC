@@ -9,12 +9,12 @@ contract BurgerHouse {
         uint256 yield;
         uint256 timestamp;
         uint256 hrs;
+        uint256 invested;
+        uint256 withdrawn;
         address ref;
         uint256 refs;
         uint256 refCoins;
         uint8[8] levels;
-        uint256 invested;
-        uint256 withdrawn;
     }
 
     uint256 public constant COIN_PRICE = 0.00002 ether; // 1 coin = 0.00002 BNB
@@ -30,9 +30,12 @@ contract BurgerHouse {
     uint256 public constant DENOMINATOR = 10000;
 
     mapping(address => House) public houses;
+
     address[] public allHouses;
+
     uint256 public totalUpgrades;
     uint256 public totalInvested;
+
     address public manager = msg.sender;
 
     function addCoins(address _ref) external payable {
