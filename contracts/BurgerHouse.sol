@@ -124,7 +124,7 @@ contract BurgerHouse {
             levels[5] +
             levels[6] +
             levels[7];
-        houses[user].cash += houses[user].yield * 24 * 14;
+        houses[user].cash += houses[user].yield * 111;
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
     }
