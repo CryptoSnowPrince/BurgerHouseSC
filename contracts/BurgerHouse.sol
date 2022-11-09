@@ -12,10 +12,10 @@ contract BurgerHouse {
         address ref;
         uint256 refs;
         uint256 refDeps;
-        uint8[8] chefs;
+        uint8[8] levels;
     }
     mapping(address => House) public houses;
-    uint256 public totalChefs;
+    uint256 public totalUpgrades;
     uint256 public totalHouses;
     uint256 public totalInvested;
     address public manager = msg.sender;
@@ -50,38 +50,38 @@ contract BurgerHouse {
 
     function collectMoney() public {
         address user = msg.sender;
-        syncHouse(user);
+        _syncHouse(user);
         houses[user].hrs = 0;
         houses[user].money += houses[user].money2;
         houses[user].money2 = 0;
     }
 
-    function upgradeHouse(uint256 floorId) public {
-        require(floorId < 8, "Max 8 floors");
+    function upgradeHouse(uint256 _houseId) public {
+        require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
-        syncHouse(user);
-        houses[user].chefs[floorId]++;
-        totalChefs++;
-        uint256 chefs = houses[user].chefs[floorId];
-        houses[user].coins -= getUpgradePrice(floorId, chefs);
-        houses[user].yield += getYield(floorId, chefs);
+        _syncHouse(user);
+        houses[user].levels[_houseId]++;
+        totalUpgrades++;
+        uint256 level = houses[user].levels[_houseId];
+        houses[user].coins -= getUpgradePrice(_houseId, level);
+        houses[user].yield += getYield(_houseId, level);
     }
 
     function sellHouse() public {
         collectMoney();
         address user = msg.sender;
-        uint8[8] memory chefs = houses[user].chefs;
-        totalChefs -= chefs[0] + chefs[1] + chefs[2] + chefs[3] + chefs[4] + chefs[5] + chefs[6] + chefs[7];
+        uint8[8] memory levels = houses[user].levels;
+        totalUpgrades -= levels[0] + levels[1] + levels[2] + levels[3] + levels[4] + levels[5] + levels[6] + levels[7];
         houses[user].money += houses[user].yield * 24 * 14;
-        houses[user].chefs = [0, 0, 0, 0, 0, 0, 0, 0];
+        houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
     }
 
     function getChefs(address addr) public view returns (uint8[8] memory) {
-        return houses[addr].chefs;
+        return houses[addr].levels;
     }
 
-    function syncHouse(address user) internal {
+    function _syncHouse(address user) internal {
         require(houses[user].timestamp > 0, "User is not registered");
         if (houses[user].yield > 0) {
             uint256 hrs = block.timestamp / 3600 - houses[user].timestamp / 3600;
@@ -94,21 +94,21 @@ contract BurgerHouse {
         houses[user].timestamp = block.timestamp;
     }
 
-    function getUpgradePrice(uint256 floorId, uint256 chefId) internal pure returns (uint256) {
-        if (chefId == 1) return [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][floorId];
-        if (chefId == 2) return [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][floorId];
-        if (chefId == 3) return [780, 2300, 7000, 21000, 63000, 187000, 570000, 1560000][floorId];
-        if (chefId == 4) return [970, 3000, 8700, 26000, 79000, 235000, 713000, 2000000][floorId];
-        if (chefId == 5) return [1200, 3600, 11000, 33000, 98000, 293000, 890000, 2500000][floorId];
-        revert("Incorrect chefId");
+    function getUpgradePrice(uint256 _houseId, uint256 _level) internal pure returns (uint256) {
+        if (_level == 1) return [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][_houseId];
+        if (_level == 2) return [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][_houseId];
+        if (_level == 3) return [780, 2300, 7000, 21000, 63000, 187000, 570000, 1560000][_houseId];
+        if (_level == 4) return [970, 3000, 8700, 26000, 79000, 235000, 713000, 2000000][_houseId];
+        if (_level == 5) return [1200, 3600, 11000, 33000, 98000, 293000, 890000, 2500000][_houseId];
+        revert("Incorrect _level");
     }
 
-    function getYield(uint256 floorId, uint256 chefId) internal pure returns (uint256) {
-        if (chefId == 1) return [41, 130, 399, 1220, 3750, 11400, 36200, 104000][floorId];
-        if (chefId == 2) return [52, 157, 498, 1530, 4700, 14300, 45500, 126500][floorId];
-        if (chefId == 3) return [65, 201, 625, 1920, 5900, 17900, 57200, 167000][floorId];
-        if (chefId == 4) return [82, 264, 780, 2380, 7400, 22700, 72500, 216500][floorId];
-        if (chefId == 5) return [103, 318, 995, 3050, 9300, 28700, 91500, 275000][floorId];
-        revert("Incorrect chefId");
+    function getYield(uint256 _houseId, uint256 _level) internal pure returns (uint256) {
+        if (_level == 1) return [41, 130, 399, 1220, 3750, 11400, 36200, 104000][_houseId];
+        if (_level == 2) return [52, 157, 498, 1530, 4700, 14300, 45500, 126500][_houseId];
+        if (_level == 3) return [65, 201, 625, 1920, 5900, 17900, 57200, 167000][_houseId];
+        if (_level == 4) return [82, 264, 780, 2380, 7400, 22700, 72500, 216500][_houseId];
+        if (_level == 5) return [103, 318, 995, 3050, 9300, 28700, 91500, 275000][_houseId];
+        revert("Incorrect _level");
     }
 }
