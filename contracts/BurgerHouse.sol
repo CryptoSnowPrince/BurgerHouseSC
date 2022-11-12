@@ -29,7 +29,7 @@ contract BurgerHouse {
     uint256 public constant LIMIT_INCOME = 15000;
     uint256 public constant DENOMINATOR = 10000;
 
-    mapping(address => House) public houses;
+    mapping(address => House) private houses;
 
     address[] public allHouses;
 
@@ -130,6 +130,10 @@ contract BurgerHouse {
         houses[user].cash += houses[user].yield * 111;
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
+    }
+
+    function viewHouse(address addr) external view returns (House memory) {
+        return houses[addr];
     }
 
     function _makeBurgers(address user) internal {
