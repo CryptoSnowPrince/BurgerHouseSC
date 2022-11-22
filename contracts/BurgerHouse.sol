@@ -174,7 +174,7 @@ contract BurgerHouse {
             levels[5] +
             levels[6] +
             levels[7];
-        houses[user].cash += houses[user].yield * 480;
+        houses[user].cash += houses[user].yield * 48; // (yield / 10) * 24 hrs * 20 days
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
     }
@@ -190,7 +190,7 @@ contract BurgerHouse {
             if (hrs + houses[user].hrs > 24) {
                 hrs = 24 - houses[user].hrs;
             }
-            houses[user].burger += hrs * houses[user].yield;
+            houses[user].burger += hrs * houses[user].yield / 10;
             houses[user].hrs += hrs;
         }
         houses[user].timestamp = block.timestamp;
@@ -257,6 +257,9 @@ contract BurgerHouse {
         revert("Incorrect level");
     }
 
+    /**
+     * @notice The yield value is 10x value to consider decimal.
+     */
     function getYield(uint256 _houseId, uint256 _level)
         private
         pure
