@@ -32,12 +32,10 @@ contract BurgerHouse {
     IERC20 public constant BUSD =
         IERC20(0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7); // BUSD address for bsc testnet
 
-    uint256 public constant COIN_PRICE = 0.005 ether; // 1 coin = 0.005 BUSD
-    uint256 public constant CASH_PRICE = 0.00005 ether; // 100 cash = 0.005 BUSD
+    uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
+    uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
 
     // 100: 1%, 10000: 100%
-    uint256 public constant REFERRAL_COIN = 700;
-    uint256 public constant REFERRAL_CASH = 300;
     uint256 public constant DEV_FEE = 400;
     uint256 public constant DEV_COIN_FEE = 500;
     uint256 public constant DEV_CASH_FEE = 500;
@@ -62,21 +60,30 @@ contract BurgerHouse {
             "TRANSFERFROM_FAIL"
         );
         uint256 coins = _amount / COIN_PRICE;
-        uint256 cash = _amount / CASH_PRICE;
 
         address user = msg.sender;
         totalInvested += _amount;
+
+        uint8 refLevel = houses[_ref].refLevel;
         if (houses[user].timestamp == 0) {
             allHouses.push(user);
-            _ref = houses[_ref].timestamp == 0 ? manager : _ref;
+            houses[user].refLevel = refLevel < 3 ? refLevel + 1 : 3;
+            _ref = _ref == address(0) ? manager : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
         }
 
         _ref = houses[user].ref;
-        houses[_ref].coins += (coins * REFERRAL_COIN) / DENOMINATOR;
-        houses[_ref].cash += (cash * REFERRAL_CASH) / DENOMINATOR;
+        refLevel = houses[user].refLevel;
+
+        (
+            uint256 refCoin,
+            uint256 refCash,
+            uint256 refInvested
+        ) = getReferralYield(refLevel, coins, _amount);
+        houses[_ref].coins += refCoin;
+        houses[_ref].cash += refCash;
         houses[_ref].refCoins += coins;
 
         houses[user].coins += coins;
@@ -89,9 +96,7 @@ contract BurgerHouse {
         );
 
         houses[user].invested += _amount;
-        houses[_ref].invested +=
-            (_amount * (REFERRAL_COIN + REFERRAL_CASH)) /
-            DENOMINATOR;
+        houses[_ref].invested += refInvested;
     }
 
     function withdrawMoney() external {
@@ -175,6 +180,34 @@ contract BurgerHouse {
             houses[user].hrs += hrs;
         }
         houses[user].timestamp = block.timestamp;
+    }
+
+    function getReferralYield(
+        uint8 _refLevel,
+        uint256 _coins,
+        uint256 _amount
+    )
+        private
+        pure
+        returns (
+            uint256 refCoin,
+            uint256 refCash,
+            uint256 refInvested
+        )
+    {
+        if (_refLevel < 2) {
+            refCoin = (_coins * 7) / 100;
+            refCash = _coins * 3;
+            refInvested = (_amount * 10) / 100;
+        } else if (_refLevel < 3) {
+            refCoin = (_coins * 3) / 100;
+            refCash = _coins * 2;
+            refInvested = (_amount * 5) / 100;
+        } else {
+            refCoin = (_coins * 2) / 100;
+            refCash = _coins;
+            refInvested = (_amount * 3) / 100;
+        }
     }
 
     function getUpgradePrice(uint256 _houseId, uint256 _level)
