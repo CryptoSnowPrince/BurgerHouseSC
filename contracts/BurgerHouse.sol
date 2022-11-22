@@ -21,6 +21,7 @@ contract BurgerHouse {
         uint256 hrs;
         uint256 invested;
         uint256 withdrawn;
+        uint256 goldTimestamp;
         address ref;
         uint256 refs;
         uint256 refCoins;
@@ -42,7 +43,7 @@ contract BurgerHouse {
     uint256 public constant LIMIT_INCOME = 15000;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant LOCK_TIME = 168 hours;
-    uint8 public constant LOCK_LEVEL = 6;
+    uint8 public constant LOCK_LEVEL = 5; // House 6
 
     mapping(address => House) private houses;
 
@@ -139,12 +140,25 @@ contract BurgerHouse {
     function upgradeHouse(uint256 _houseId) external {
         require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
+        if (_houseId >= LOCK_LEVEL && houses[user].levels[_houseId] < 1) {
+            require(
+                houses[user].levels[_houseId - 1] >= 5,
+                "INSUFFICIENT_LEVEL_TO_UPGRADE"
+            );
+            require(
+                houses[user].goldTimestamp + LOCK_TIME <= block.timestamp,
+                "IN_LOCKTIME_YET"
+            );
+        }
         _makeBurgers(user);
         houses[user].levels[_houseId]++;
         totalUpgrades++;
         uint256 level = houses[user].levels[_houseId];
         houses[user].coins -= getUpgradePrice(_houseId, level);
         houses[user].yield += getYield(_houseId, level);
+        if (_houseId >= (LOCK_LEVEL - 1) && level == 5) {
+            houses[user].goldTimestamp = block.timestamp;
+        }
     }
 
     function sellHouse() external {
@@ -160,7 +174,7 @@ contract BurgerHouse {
             levels[5] +
             levels[6] +
             levels[7];
-        houses[user].cash += houses[user].yield * 111;
+        houses[user].cash += houses[user].yield * 480;
         houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
         houses[user].yield = 0;
     }
