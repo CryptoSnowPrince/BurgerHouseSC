@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
+}
+
 contract BurgerHouse {
     struct House {
         uint256 coins;
@@ -14,11 +24,16 @@ contract BurgerHouse {
         address ref;
         uint256 refs;
         uint256 refCoins;
+        uint8 refLevel;
         uint8[8] levels;
     }
 
-    uint256 public constant COIN_PRICE = 0.00002 ether; // 1 coin = 0.00002 BNB
-    uint256 public constant CASH_PRICE = 0.0000002 ether; // 100 cash = 0.00002 BNB
+    // address public constant BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
+    IERC20 public constant BUSD =
+        IERC20(0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7); // BUSD address for bsc testnet
+
+    uint256 public constant COIN_PRICE = 0.005 ether; // 1 coin = 0.005 BUSD
+    uint256 public constant CASH_PRICE = 0.00005 ether; // 100 cash = 0.005 BUSD
 
     // 100: 1%, 10000: 100%
     uint256 public constant REFERRAL_COIN = 700;
@@ -28,6 +43,8 @@ contract BurgerHouse {
     uint256 public constant DEV_CASH_FEE = 500;
     uint256 public constant LIMIT_INCOME = 15000;
     uint256 public constant DENOMINATOR = 10000;
+    uint256 public constant LOCK_TIME = 168 hours;
+    uint8 public constant LOCK_LEVEL = 6;
 
     mapping(address => House) private houses;
 
@@ -38,13 +55,17 @@ contract BurgerHouse {
 
     address public manager = msg.sender;
 
-    function addCoins(address _ref) external payable {
-        uint256 coins = msg.value / COIN_PRICE;
-        require(coins > 0, "Zero coins");
-        uint256 cash = msg.value / CASH_PRICE;
+    function addCoins(address _ref, uint256 _amount) external {
+        require(_amount > 0, "ZERO_BUSD_AMOUNT");
+        require(
+            BUSD.transferFrom(msg.sender, address(this), _amount),
+            "TRANSFERFROM_FAIL"
+        );
+        uint256 coins = _amount / COIN_PRICE;
+        uint256 cash = _amount / CASH_PRICE;
 
         address user = msg.sender;
-        totalInvested += msg.value;
+        totalInvested += _amount;
         if (houses[user].timestamp == 0) {
             allHouses.push(user);
             _ref = houses[_ref].timestamp == 0 ? manager : _ref;
@@ -62,11 +83,14 @@ contract BurgerHouse {
 
         houses[manager].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
 
-        payable(manager).transfer((msg.value * DEV_FEE) / DENOMINATOR);
+        require(
+            BUSD.transfer(manager, (_amount * DEV_FEE) / DENOMINATOR),
+            "TRANSFER_FAIL"
+        );
 
-        houses[user].invested += msg.value;
+        houses[user].invested += _amount;
         houses[_ref].invested +=
-            (msg.value * (REFERRAL_COIN + REFERRAL_CASH)) /
+            (_amount * (REFERRAL_COIN + REFERRAL_CASH)) /
             DENOMINATOR;
     }
 
@@ -85,13 +109,17 @@ contract BurgerHouse {
         amount = address(this).balance < amount
             ? address(this).balance
             : amount;
-        payable(user).transfer(amount);
+        require(BUSD.transfer(user, amount), "TRANSFER_FAIL");
 
         houses[user].withdrawn += amount;
 
         amount = cashFee * CASH_PRICE;
-        payable(manager).transfer(
-            address(this).balance < amount ? address(this).balance : amount
+        require(
+            BUSD.transfer(
+                manager,
+                address(this).balance < amount ? address(this).balance : amount
+            ),
+            "TRANSFER_FAIL"
         );
     }
 
@@ -189,19 +217,25 @@ contract BurgerHouse {
     {
         if (_level == 1)
             return
-                [123, 390, 1197, 3585, 11250, 34200, 108600, 312000][_houseId];
+                [205, 680, 2220, 7210, 25060, 78480, 263000, 815000][_houseId];
         if (_level == 2)
             return
-                [156, 471, 1494, 4590, 14100, 42900, 136500, 379500][_houseId];
+                [260, 820, 2770, 9050, 31410, 98440, 330000, 986000][_houseId];
         if (_level == 3)
             return
-                [195, 603, 1875, 5760, 17700, 53700, 171600, 501000][_houseId];
+                [325, 1050, 3480, 11350, 39440, 123230, 415000, 1293040][
+                    _houseId
+                ];
         if (_level == 4)
             return
-                [246, 792, 2340, 7140, 22200, 68100, 217500, 649500][_houseId];
+                [410, 1380, 4350, 14100, 49500, 156270, 524000, 1676400][
+                    _houseId
+                ];
         if (_level == 5)
             return
-                [309, 954, 2985, 9015, 27900, 86100, 274500, 825000][_houseId];
+                [510, 1670, 5580, 18040, 62160, 197590, 654000, 2130300][
+                    _houseId
+                ];
         revert("Incorrect level");
     }
 
