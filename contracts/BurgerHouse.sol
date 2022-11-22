@@ -31,7 +31,7 @@ contract BurgerHouse {
 
     // address public constant BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
     IERC20 public constant BUSD =
-        IERC20(0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7); // BUSD address for bsc testnet
+        IERC20(0x7A62eE9B6cde5cdd3Fd9d82448952f8E2f99c8C0); // MockBUSD address for bsc testnet
 
     uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
     uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
@@ -190,7 +190,7 @@ contract BurgerHouse {
             if (hrs + houses[user].hrs > 24) {
                 hrs = 24 - houses[user].hrs;
             }
-            houses[user].burger += hrs * houses[user].yield / 10;
+            houses[user].burger += (hrs * houses[user].yield) / 10;
             houses[user].hrs += hrs;
         }
         houses[user].timestamp = block.timestamp;
