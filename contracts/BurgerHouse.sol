@@ -9,6 +9,8 @@ interface IERC20 {
         address to,
         uint256 amount
     ) external returns (bool);
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 contract BurgerHouse {
@@ -112,8 +114,8 @@ contract BurgerHouse {
                 (houses[user].invested * LIMIT_INCOME) / DENOMINATOR,
             "Your income is reached to limit, please buy more coin to get more income!"
         );
-        amount = address(this).balance < amount
-            ? address(this).balance
+        amount = BUSD.balanceOf(address(this)) < amount
+            ? BUSD.balanceOf(address(this))
             : amount;
         require(BUSD.transfer(user, amount), "TRANSFER_FAIL");
 
@@ -123,7 +125,9 @@ contract BurgerHouse {
         require(
             BUSD.transfer(
                 manager,
-                address(this).balance < amount ? address(this).balance : amount
+                BUSD.balanceOf(address(this)) < amount
+                    ? BUSD.balanceOf(address(this))
+                    : amount
             ),
             "TRANSFER_FAIL"
         );
