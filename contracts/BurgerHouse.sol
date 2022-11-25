@@ -165,24 +165,6 @@ contract BurgerHouse {
         }
     }
 
-    function sellHouse() external {
-        collectMoney();
-        address user = msg.sender;
-        uint8[8] memory levels = houses[user].levels;
-        totalUpgrades -=
-            levels[0] +
-            levels[1] +
-            levels[2] +
-            levels[3] +
-            levels[4] +
-            levels[5] +
-            levels[6] +
-            levels[7];
-        houses[user].cash += houses[user].yield * 48; // (yield / 10) * 24 hrs * 20 days
-        houses[user].levels = [0, 0, 0, 0, 0, 0, 0, 0];
-        houses[user].yield = 0;
-    }
-
     function viewHouse(address addr) external view returns (House memory) {
         return houses[addr];
     }
