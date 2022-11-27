@@ -144,11 +144,11 @@ contract BurgerHouse {
     function upgradeHouse(uint256 _houseId) external {
         require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
+        require(
+            _houseId < 1 || houses[user].levels[_houseId - 1] >= 5,
+            "INSUFFICIENT_LEVEL_TO_UPGRADE"
+        );
         if (_houseId >= LOCK_LEVEL && houses[user].levels[_houseId] < 1) {
-            require(
-                houses[user].levels[_houseId - 1] >= 5,
-                "INSUFFICIENT_LEVEL_TO_UPGRADE"
-            );
             require(
                 houses[user].goldTimestamp + LOCK_TIME <= block.timestamp,
                 "IN_LOCKTIME_YET"
