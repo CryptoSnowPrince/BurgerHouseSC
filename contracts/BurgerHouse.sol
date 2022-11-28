@@ -26,8 +26,10 @@ contract BurgerHouse {
         uint256 goldTimestamp;
         address ref;
         uint256 refs;
+        uint256 refs2;
+        uint256 refs3;
         uint256 refCoins;
-        uint8 refLevel;
+        uint256 refCash;
         uint8[8] levels;
     }
 
@@ -67,27 +69,46 @@ contract BurgerHouse {
         address user = msg.sender;
         totalInvested += _amount;
 
-        uint8 refLevel = houses[_ref].refLevel;
         if (houses[user].timestamp == 0) {
             allHouses.push(user);
-            houses[user].refLevel = refLevel < 3 ? refLevel + 1 : 3;
-            _ref = _ref == address(0) ? manager : _ref;
+            _ref = (_ref == address(0) || _ref == user) ? manager : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
+            address ref2 = houses[_ref].ref;
+            if (houses[ref2].timestamp != 0) {
+                houses[ref2].refs2++;
+                address ref3 = houses[ref2].ref;
+                if (houses[ref3].timestamp != 0) {
+                    houses[ref3].refs3++;
+                }
+            }
         }
 
         _ref = houses[user].ref;
-        refLevel = houses[user].refLevel;
-
-        (
-            uint256 refCoin,
-            uint256 refCash,
-            uint256 refInvested
-        ) = getReferralYield(refLevel, coins, _amount);
-        houses[_ref].coins += refCoin;
-        houses[_ref].cash += refCash;
-        houses[_ref].refCoins += coins;
+        if (_ref != address(0)) {
+            houses[_ref].coins += (coins * 7) / 100;
+            houses[_ref].cash += coins * 3;
+            houses[_ref].refCoins += (coins * 7) / 100;
+            houses[_ref].refCash += coins * 3;
+            houses[_ref].invested += (coins * 10) / 100;
+            address ref2 = houses[_ref].ref;
+            if (ref2 != address(0)) {
+                houses[ref2].coins += (coins * 3) / 100;
+                houses[ref2].cash += coins * 2;
+                houses[ref2].refCoins += (coins * 3) / 100;
+                houses[ref2].refCash += coins * 2;
+                houses[ref2].invested += (coins * 5) / 100;
+                address ref3 = houses[ref2].ref;
+                if (ref3 != address(0)) {
+                    houses[ref3].coins += (coins * 2) / 100;
+                    houses[ref3].cash += coins;
+                    houses[ref3].refCoins += (coins * 2) / 100;
+                    houses[ref3].refCash += coins;
+                    houses[ref3].invested += (coins * 3) / 100;
+                }
+            }
+        }
 
         houses[user].coins += coins;
 
@@ -99,7 +120,6 @@ contract BurgerHouse {
         );
 
         houses[user].invested += _amount;
-        houses[_ref].invested += refInvested;
     }
 
     function withdrawMoney() external {
@@ -180,34 +200,6 @@ contract BurgerHouse {
             houses[user].hrs += hrs;
         }
         houses[user].timestamp = block.timestamp;
-    }
-
-    function getReferralYield(
-        uint8 _refLevel,
-        uint256 _coins,
-        uint256 _amount
-    )
-        private
-        pure
-        returns (
-            uint256 refCoin,
-            uint256 refCash,
-            uint256 refInvested
-        )
-    {
-        if (_refLevel < 2) {
-            refCoin = (_coins * 7) / 100;
-            refCash = _coins * 3;
-            refInvested = (_amount * 10) / 100;
-        } else if (_refLevel < 3) {
-            refCoin = (_coins * 3) / 100;
-            refCash = _coins * 2;
-            refInvested = (_amount * 5) / 100;
-        } else {
-            refCoin = (_coins * 2) / 100;
-            refCash = _coins;
-            refInvested = (_amount * 3) / 100;
-        }
     }
 
     function getUpgradePrice(uint256 _houseId, uint256 _level)
