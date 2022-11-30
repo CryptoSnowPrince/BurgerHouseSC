@@ -33,10 +33,12 @@ contract BurgerHouse {
         uint8[8] levels;
     }
 
-    // address public constant BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
-    // address public constant BUSD = IERC20(0xb7b657071Ad838AEB0096597f071AF981cdD4c9a); // MockBUSD address for bsc mainnet
+    // IERC20 public constant BUSD =
+    //     IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
     IERC20 public constant BUSD =
-        IERC20(0x7A62eE9B6cde5cdd3Fd9d82448952f8E2f99c8C0); // MockBUSD address for bsc testnet
+        IERC20(0xb7b657071Ad838AEB0096597f071AF981cdD4c9a); // MockBUSD address for bsc mainnet
+    // IERC20 public constant BUSD =
+    //     IERC20(0x7A62eE9B6cde5cdd3Fd9d82448952f8E2f99c8C0); // MockBUSD address for bsc testnet
 
     uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
     uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
