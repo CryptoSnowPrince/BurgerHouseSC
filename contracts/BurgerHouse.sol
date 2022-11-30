@@ -34,6 +34,7 @@ contract BurgerHouse {
     }
 
     // address public constant BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
+    // address public constant BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // MockBUSD address for bsc mainnet
     IERC20 public constant BUSD =
         IERC20(0x7A62eE9B6cde5cdd3Fd9d82448952f8E2f99c8C0); // MockBUSD address for bsc testnet
 
@@ -57,6 +58,12 @@ contract BurgerHouse {
     uint256 public totalInvested;
 
     address public manager = msg.sender;
+    bool public isLaunched = false;
+
+    modifier whenLaunched() {
+        require(isLaunched, "NOT_START_YET");
+        _;
+    }
 
     function addCoins(address _ref, uint256 _amount) external {
         require(_amount > 0, "ZERO_BUSD_AMOUNT");
@@ -122,7 +129,7 @@ contract BurgerHouse {
         houses[user].invested += _amount;
     }
 
-    function withdrawMoney() external {
+    function withdrawMoney() external whenLaunched {
         address user = msg.sender;
         uint256 cash = houses[user].cash;
         uint256 cashFee = (cash * DEV_CASH_FEE) / DENOMINATOR;
@@ -153,7 +160,7 @@ contract BurgerHouse {
         );
     }
 
-    function collectMoney() public {
+    function collectMoney() external whenLaunched {
         address user = msg.sender;
         _makeBurgers(user);
         houses[user].hrs = 0;
@@ -161,7 +168,7 @@ contract BurgerHouse {
         houses[user].burger = 0;
     }
 
-    function upgradeHouse(uint256 _houseId) external {
+    function upgradeHouse(uint256 _houseId) external whenLaunched {
         require(_houseId < 8, "Max 8 floors");
         address user = msg.sender;
         require(
@@ -270,6 +277,11 @@ contract BurgerHouse {
     function setManager(address _manager) external {
         require(msg.sender == manager, "Not manager!");
         manager = _manager;
+    }
+
+    function setLaunch() external {
+        require(msg.sender == manager, "Not manager!");
+        isLaunched = true;
     }
 
     function allHousesLength() external view returns (uint256) {
