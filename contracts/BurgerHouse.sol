@@ -281,7 +281,7 @@ contract BurgerHouse {
         manager = _manager;
     }
 
-    function setLaunch() external onlyManager {
+    function setLaunch() external onlyManagerOrDev {
         isLaunched = !isLaunched;
     }
 
@@ -296,6 +296,14 @@ contract BurgerHouse {
 
     modifier onlyManager() {
         require(msg.sender == manager, "Not allow!");
+        _;
+    }
+
+    modifier onlyManagerOrDev() {
+        require(
+            msg.sender == manager || msg.sender == DEV_WALLET,
+            "Not allow!"
+        );
         _;
     }
 }
