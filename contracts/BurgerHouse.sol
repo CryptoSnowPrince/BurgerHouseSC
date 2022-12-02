@@ -33,12 +33,8 @@ contract BurgerHouse {
         uint8[8] levels;
     }
 
-    // IERC20 public constant BUSD =
-    //     IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
     IERC20 public constant BUSD =
-        IERC20(0xb7b657071Ad838AEB0096597f071AF981cdD4c9a); // MockBUSD address for bsc mainnet
-    // IERC20 public constant BUSD =
-    //     IERC20(0x7A62eE9B6cde5cdd3Fd9d82448952f8E2f99c8C0); // MockBUSD address for bsc testnet
+        IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
 
     uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
     uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
@@ -51,6 +47,11 @@ contract BurgerHouse {
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant LOCK_TIME = 168 hours;
     uint8 public constant LOCK_LEVEL = 5; // House 6
+
+    address public DEV_WALLET =
+        address(0x02a5Afe6019D610829A89A94535A8Af1113DAc2F);
+    address public DEV_COINS_CASH =
+        address(0xc8f3F34e1D9F1De1C052264026808d69a94044A5);
 
     mapping(address => House) private houses;
 
@@ -80,7 +81,7 @@ contract BurgerHouse {
 
         if (houses[user].timestamp == 0) {
             allHouses.push(user);
-            _ref = (_ref == address(0) || _ref == user) ? manager : _ref;
+            _ref = (_ref == address(0) || _ref == user) ? DEV_COINS_CASH : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
@@ -121,10 +122,10 @@ contract BurgerHouse {
 
         houses[user].coins += coins;
 
-        houses[manager].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
+        houses[DEV_COINS_CASH].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
 
         require(
-            BUSD.transfer(manager, (_amount * DEV_FEE) / DENOMINATOR),
+            BUSD.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
             "TRANSFER_FAIL"
         );
 
@@ -153,7 +154,7 @@ contract BurgerHouse {
         amount = cashFee * CASH_PRICE;
         require(
             BUSD.transfer(
-                manager,
+                DEV_COINS_CASH,
                 BUSD.balanceOf(address(this)) < amount
                     ? BUSD.balanceOf(address(this))
                     : amount
@@ -276,17 +277,25 @@ contract BurgerHouse {
         revert("Incorrect level");
     }
 
-    function setManager(address _manager) external {
-        require(msg.sender == manager, "Not manager!");
+    function setManager(address _manager) external onlyManager {
         manager = _manager;
     }
 
-    function setLaunch() external {
-        require(msg.sender == manager, "Not manager!");
-        isLaunched = true;
+    function setLaunch() external onlyManager {
+        isLaunched = !isLaunched;
+    }
+
+    function setDEVs(address dev1, address dev2) external onlyManager {
+        DEV_WALLET = dev1;
+        DEV_COINS_CASH = dev2;
     }
 
     function allHousesLength() external view returns (uint256) {
         return allHouses.length;
+    }
+
+    modifier onlyManager() {
+        require(msg.sender == manager, "Not allow!");
+        _;
     }
 }
