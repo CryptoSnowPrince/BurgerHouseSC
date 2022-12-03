@@ -33,10 +33,10 @@ contract BurgerHouse {
         uint8[8] levels;
     }
 
-    IERC20 public immutable asset;
+    IERC20 public immutable BUSD;
 
-    uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 asset
-    uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 asset
+    uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 BUSD
+    uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 BUSD
 
     // 100: 1%, 10000: 100%
     uint256 public constant DEV_FEE = 400;
@@ -61,11 +61,11 @@ contract BurgerHouse {
     bool public isLaunched = false;
 
     constructor(
-        IERC20 _asset,
+        IERC20 _BUSD,
         address _devWallet,
         address _devDeployer
     ) {
-        asset = _asset;
+        BUSD = _BUSD;
         DEV_WALLET = _devWallet;
         DEV_DEPLOYER = _devDeployer;
     }
@@ -78,7 +78,7 @@ contract BurgerHouse {
     function addCoins(address _ref, uint256 _amount) external {
         require(_amount > 0, "ZERO_BUSD_AMOUNT");
         require(
-            asset.transferFrom(msg.sender, address(this), _amount),
+            BUSD.transferFrom(msg.sender, address(this), _amount),
             "TRANSFERFROM_FAIL"
         );
         uint256 coins = _amount / COIN_PRICE;
@@ -132,7 +132,7 @@ contract BurgerHouse {
         houses[DEV_DEPLOYER].coins += (coins * DEV_COIN_FEE) / DENOMINATOR;
 
         require(
-            asset.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
+            BUSD.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
             "TRANSFER_FAIL"
         );
 
@@ -151,19 +151,19 @@ contract BurgerHouse {
                 (houses[user].invested * LIMIT_INCOME) / DENOMINATOR,
             "Your income is reached to limit, please buy more coin to get more income!"
         );
-        amount = asset.balanceOf(address(this)) < amount
-            ? asset.balanceOf(address(this))
+        amount = BUSD.balanceOf(address(this)) < amount
+            ? BUSD.balanceOf(address(this))
             : amount;
-        require(asset.transfer(user, amount), "TRANSFER_FAIL");
+        require(BUSD.transfer(user, amount), "TRANSFER_FAIL");
 
         houses[user].withdrawn += amount;
 
         amount = cashFee * CASH_PRICE;
         require(
-            asset.transfer(
+            BUSD.transfer(
                 DEV_DEPLOYER,
-                asset.balanceOf(address(this)) < amount
-                    ? asset.balanceOf(address(this))
+                BUSD.balanceOf(address(this)) < amount
+                    ? BUSD.balanceOf(address(this))
                     : amount
             ),
             "TRANSFER_FAIL"
