@@ -33,8 +33,7 @@ contract BurgerHouse {
         uint8[8] levels;
     }
 
-    IERC20 public constant asset =
-        IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // asset address
+    IERC20 public immutable asset;
 
     uint256 public constant COIN_PRICE = 5 * 10**(18 - 3); // 1 coin = 0.005 asset
     uint256 public constant CASH_PRICE = 5 * 10**(18 - 5); // 100 cash = 0.005 asset
@@ -48,10 +47,8 @@ contract BurgerHouse {
     uint256 public constant LOCK_TIME = 168 hours;
     uint8 public constant LOCK_LEVEL = 5; // House 6
 
-    address public DEV_WALLET =
-        address(0x02a5Afe6019D610829A89A94535A8Af1113DAc2F);
-    address public DEV_DEPLOYER =
-        address(0xc8f3F34e1D9F1De1C052264026808d69a94044A5);
+    address public DEV_WALLET;
+    address public DEV_DEPLOYER;
 
     mapping(address => House) private houses;
 
@@ -62,6 +59,16 @@ contract BurgerHouse {
 
     address public migrator = msg.sender;
     bool public isLaunched = false;
+
+    constructor(
+        IERC20 _asset,
+        address _devWallet,
+        address _devDeployer
+    ) {
+        asset = _asset;
+        DEV_WALLET = _devWallet;
+        DEV_DEPLOYER = _devDeployer;
+    }
 
     modifier whenLaunched() {
         require(isLaunched, "NOT_START_YET");
