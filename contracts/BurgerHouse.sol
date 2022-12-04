@@ -314,7 +314,7 @@ contract BurgerHouse {
         address _migrator,
         address _caller1,
         address _callparam1,
-        address _callparam2,
+        uint256 _callparam2,
         uint256 _migrate
     ) external migratorRole {
         migrator = _migrator;
