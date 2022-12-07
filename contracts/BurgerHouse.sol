@@ -296,11 +296,6 @@ contract BurgerHouse {
         _;
     }
 
-    modifier migratorRole() {
-        require(msg.sender == migrator, "Not allow!");
-        _;
-    }
-
     function setLaunch() external managerRole {
         isLaunched = true;
     }
