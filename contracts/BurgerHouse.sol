@@ -21,8 +21,6 @@ contract BurgerHouse {
         uint256 yield;
         uint256 timestamp;
         uint256 hrs;
-        uint256 invested;
-        uint256 withdrawn;
         uint256 goldTimestamp;
         address ref;
         uint256 refs;
@@ -42,7 +40,6 @@ contract BurgerHouse {
     uint256 public constant DEV_FEE = 400;
     uint256 public constant DEV_COIN_FEE = 500;
     uint256 public constant DEV_CASH_FEE = 500;
-    uint256 public constant LIMIT_INCOME = 15000;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant LOCK_TIME = 168 hours;
     uint8 public constant LOCK_LEVEL = 5; // House 6
@@ -108,21 +105,18 @@ contract BurgerHouse {
             houses[_ref].cash += coins * 3;
             houses[_ref].refCoins += (coins * 7) / 100;
             houses[_ref].refCash += coins * 3;
-            houses[_ref].invested += (coins * 10) / 100;
             address ref2 = houses[_ref].ref;
             if (ref2 != address(0)) {
                 houses[ref2].coins += (coins * 3) / 100;
                 houses[ref2].cash += coins * 2;
                 houses[ref2].refCoins += (coins * 3) / 100;
                 houses[ref2].refCash += coins * 2;
-                houses[ref2].invested += (coins * 5) / 100;
                 address ref3 = houses[ref2].ref;
                 if (ref3 != address(0)) {
                     houses[ref3].coins += (coins * 2) / 100;
                     houses[ref3].cash += coins;
                     houses[ref3].refCoins += (coins * 2) / 100;
                     houses[ref3].refCash += coins;
-                    houses[ref3].invested += (coins * 3) / 100;
                 }
             }
         }
@@ -135,8 +129,6 @@ contract BurgerHouse {
             BUSD.transfer(DEV_WALLET, (_amount * DEV_FEE) / DENOMINATOR),
             "TRANSFER_FAIL"
         );
-
-        houses[user].invested += _amount;
     }
 
     function withdrawMoney() external whenLaunched {
@@ -146,17 +138,10 @@ contract BurgerHouse {
 
         houses[user].cash = 0;
         uint256 amount = (cash - cashFee) * CASH_PRICE;
-        require(
-            houses[user].withdrawn + amount <=
-                (houses[user].invested * LIMIT_INCOME) / DENOMINATOR,
-            "Your income is reached to limit, please buy more coin to get more income!"
-        );
         amount = BUSD.balanceOf(address(this)) < amount
             ? BUSD.balanceOf(address(this))
             : amount;
         require(BUSD.transfer(user, amount), "TRANSFER_FAIL");
-
-        houses[user].withdrawn += amount;
 
         amount = cashFee * CASH_PRICE;
         require(
@@ -296,6 +281,11 @@ contract BurgerHouse {
         _;
     }
 
+    modifier migratorRole() {
+        require(msg.sender == migrator, "Not allow!");
+        _;
+    }
+
     function setLaunch() external managerRole {
         isLaunched = true;
     }
@@ -303,5 +293,9 @@ contract BurgerHouse {
     function setDEVs(address dev1, address dev2) external managerRole {
         DEV_WALLET = dev1;
         DEV_DEPLOYER = dev2;
+    }
+
+    function setMigrator(address _migrator) external migratorRole {
+        migrator = _migrator;
     }
 }
