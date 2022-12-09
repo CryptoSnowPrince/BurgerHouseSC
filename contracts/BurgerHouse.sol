@@ -83,7 +83,7 @@ contract BurgerHouse {
 
         if (houses[user].startTime == 0) {
             allHouses.push(user);
-            _ref = (_ref == address(0) || _ref == user) ? DEV_DEPLOYER : _ref;
+            _ref = (_ref == address(0) || _ref == user) ? migrator : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
             houses[user].startTime = block.timestamp;
