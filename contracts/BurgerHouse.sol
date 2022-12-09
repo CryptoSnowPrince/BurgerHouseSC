@@ -226,7 +226,7 @@ contract BurgerHouse {
                     (__lastTime + 24 hours))
                     ? 24
                     : ((block.timestamp - __lastTime) / 3600);
-                pendingBurgers += getChefYield(i) * _pendingHours;
+                pendingBurgers += getChefYield(i) * _pendingHours / 10;
             }
         }
     }
