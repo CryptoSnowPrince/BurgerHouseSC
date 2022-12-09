@@ -17,18 +17,16 @@ contract BurgerHouse {
     struct House {
         uint256 coins;
         uint256 cash;
-        uint256 burger;
-        uint256 yield;
-        uint256 timestamp;
-        uint256 hrs;
-        uint256 goldTimestamp;
+        uint256 startTime;
+        uint256 lockTime;
+        uint256 lastTime;
         address ref;
         uint256 refs;
         uint256 refs2;
         uint256 refs3;
         uint256 refCoins;
         uint256 refCash;
-        uint8[8] levels;
+        uint256[] chefStarttimes;
     }
 
     IERC20 public immutable BUSD;
@@ -42,7 +40,7 @@ contract BurgerHouse {
     uint256 public constant DEV_CASH_FEE = 500;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant LOCK_TIME = 168 hours;
-    uint8 public constant LOCK_LEVEL = 5; // House 6
+    uint256 public constant MAX_CHEFS = 40;
 
     address public DEV_WALLET;
     address public DEV_DEPLOYER;
@@ -83,17 +81,17 @@ contract BurgerHouse {
         address user = msg.sender;
         totalInvested += _amount;
 
-        if (houses[user].timestamp == 0) {
+        if (houses[user].startTime == 0) {
             allHouses.push(user);
             _ref = (_ref == address(0) || _ref == user) ? DEV_DEPLOYER : _ref;
             houses[_ref].refs++;
             houses[user].ref = _ref;
-            houses[user].timestamp = block.timestamp;
+            houses[user].startTime = block.timestamp;
             address ref2 = houses[_ref].ref;
-            if (houses[ref2].timestamp != 0) {
+            if (houses[ref2].startTime != 0) {
                 houses[ref2].refs2++;
                 address ref3 = houses[ref2].ref;
-                if (houses[ref3].timestamp != 0) {
+                if (houses[ref3].startTime != 0) {
                     houses[ref3].refs3++;
                 }
             }
@@ -157,116 +155,116 @@ contract BurgerHouse {
 
     function collectMoney() external whenLaunched {
         address user = msg.sender;
-        _makeBurgers(user);
-        houses[user].hrs = 0;
-        houses[user].cash += houses[user].burger;
-        houses[user].burger = 0;
+        require(houses[user].startTime > 0, "User is not registered");
+        houses[user].cash += getPendingBurgers(user);
+        houses[user].lastTime = block.timestamp;
     }
 
-    function upgradeHouse(uint256 _houseId) external whenLaunched {
-        require(_houseId < 8, "Max 8 floors");
+    function upgradeHouse(uint256 _chefId) external whenLaunched {
+        require(_chefId < MAX_CHEFS, "MAX_CHEFS_OVERFLOW");
         address user = msg.sender;
-        require(
-            _houseId < 1 || houses[user].levels[_houseId - 1] >= 5,
-            "INSUFFICIENT_LEVEL_TO_UPGRADE"
-        );
-        if (_houseId >= LOCK_LEVEL && houses[user].levels[_houseId] < 1) {
-            require(
-                houses[user].goldTimestamp + LOCK_TIME <= block.timestamp,
-                "IN_LOCKTIME_YET"
-            );
+        uint256 _length = houses[user].chefStarttimes.length;
+        if (_length == 0) houses[user].lastTime = block.timestamp;
+
+        if (_chefId < _length) { // maintain
+            require(block.timestamp > houses[user].chefStarttimes[_chefId] + getChefCycle(_chefId), "NO_NEED_MAINTAIN");
+            houses[user].chefStarttimes[_chefId] = block.timestamp;
+        } else { // new chef
+            require(_chefId == _length, "INSUFFICIENT_LEVEL_TO_UPGRADE");
+            if (_chefId == 25 || _chefId == 30 || _chefId == 35) {
+                require(
+                    block.timestamp >= houses[user].lockTime + LOCK_TIME,
+                    "IN_LOCKTIME_YET"
+                );
+            }
+            houses[user].chefStarttimes.push(block.timestamp);
+            if (_chefId == 24 || _chefId == 29 || _chefId == 34) {
+                houses[user].lockTime = block.timestamp;
+            }
         }
-        _makeBurgers(user);
-        houses[user].levels[_houseId]++;
         totalUpgrades++;
-        uint256 level = houses[user].levels[_houseId];
-        houses[user].coins -= getUpgradePrice(_houseId, level);
-        houses[user].yield += getYield(_houseId, level);
-        if (_houseId >= (LOCK_LEVEL - 1) && level == 5) {
-            houses[user].goldTimestamp = block.timestamp;
+        houses[user].coins -= getChefPrice(_chefId);
+    }
+    
+    function getHouseYield(address _user) external view returns (uint256 houseYield) {
+        uint256[] memory _chefStarttimes = houses[_user].chefStarttimes;
+        uint256 _length = _chefStarttimes.length;
+
+        for (uint256 i = 0; i < _length; i++) {
+            if (_chefStarttimes[i] +  getChefCycle(i) >= block.timestamp) {
+                houseYield += getChefYield(i);
+            }
         }
     }
+
+    function getPendingBurgers(address _user) public view returns (uint256 pendingBurgers) {
+        uint256 _lastTime = houses[_user].lastTime;
+        uint256[] memory _chefStarttimes = houses[_user].chefStarttimes;
+        uint256 _length = _chefStarttimes.length;
+
+        for (uint256 i = 0; i < _length; i++) {
+            if (_chefStarttimes[i] +  getChefCycle(i) >= block.timestamp) {
+                uint256 __lastTime = _chefStarttimes[i] > _lastTime ? _chefStarttimes[i] : _lastTime;
+                uint256 _pendingHours = (block.timestamp > (__lastTime + 24 hours)) ? 24 : ((block.timestamp - __lastTime) / 3600);
+                pendingBurgers += getChefYield(i) * _pendingHours;
+            }
+        }
+    }
+
+    function getChefPrice(uint256 _id) private pure returns (uint256) {
+        if (_id >= MAX_CHEFS) {
+            revert("Incorrect id");
+        }
+
+        return [
+            500, 625, 780, 970, 1200, 
+            1500, 1800, 2300, 3000, 3600, 
+            4500, 5600, 7000, 8700, 11000, 
+            13500, 16800, 21000, 26000, 33000, 
+            40500, 50600, 63200, 79000, 98800, 
+            120000, 150000, 187000, 235000, 293000, 
+            365000, 456000, 570000, 713000, 890000, 
+            1000000, 1200000, 1560000, 2000000, 2500000
+        ][_id];
+    }
+
+    function getChefYield(uint256 _id) private pure returns (uint256) {
+        if (_id >= MAX_CHEFS) {
+            revert("Incorrect id");
+        }
+
+        return [
+            205, 260, 325, 410, 510, 
+            680, 820, 1050, 1380, 1670, 
+            2220, 2770, 3480, 4350, 5580, 
+            7210, 9050, 11350, 14100, 18040, 
+            25060, 31410, 39440, 49500, 62160, 
+            78480, 98440, 123230, 156270, 197590, 
+            263000, 330000, 415000, 524000, 654000, 
+            815000, 986000, 1293040, 1676400, 2130300
+        ][_id];
+    }
+
+    function getChefCycle(uint256 _id) private pure returns (uint256)  {
+        if (_id >= MAX_CHEFS) {
+            revert("Incorrect id");
+        }
+
+        return [
+            200 days, 200 days, 200 days, 200 days, 200 days, 
+            190 days, 190 days, 190 days, 190 days, 190 days, 
+            180 days, 180 days, 180 days, 180 days, 180 days, 
+            172 days, 172 days, 172 days, 172 days, 172 days, 
+            160 days, 160 days, 160 days, 160 days, 160 days, 
+            150 days, 150 days, 150 days, 150 days, 150 days, 
+            145 days, 145 days, 145 days, 145 days, 145 days, 
+            140 days, 140 days, 140 days, 140 days, 140 days
+        ][_id];
+    } 
+
 
     function viewHouse(address addr) external view returns (House memory) {
         return houses[addr];
-    }
-
-    function _makeBurgers(address user) internal {
-        require(houses[user].timestamp > 0, "User is not registered");
-        if (houses[user].yield > 0) {
-            uint256 hrs = (block.timestamp - houses[user].timestamp) / 3600;
-            if (hrs + houses[user].hrs > 24) {
-                hrs = 24 - houses[user].hrs;
-            }
-            houses[user].burger += (hrs * houses[user].yield) / 10;
-            houses[user].hrs += hrs;
-        }
-        houses[user].timestamp = block.timestamp;
-    }
-
-    function getUpgradePrice(uint256 _houseId, uint256 _level)
-        private
-        pure
-        returns (uint256)
-    {
-        if (_level == 1)
-            return
-                [500, 1500, 4500, 13500, 40500, 120000, 365000, 1000000][
-                    _houseId
-                ];
-        if (_level == 2)
-            return
-                [625, 1800, 5600, 16800, 50600, 150000, 456000, 1200000][
-                    _houseId
-                ];
-        if (_level == 3)
-            return
-                [780, 2300, 7000, 21000, 63200, 187000, 570000, 1560000][
-                    _houseId
-                ];
-        if (_level == 4)
-            return
-                [970, 3000, 8700, 26000, 79000, 235000, 713000, 2000000][
-                    _houseId
-                ];
-        if (_level == 5)
-            return
-                [1200, 3600, 11000, 33000, 98800, 293000, 890000, 2500000][
-                    _houseId
-                ];
-        revert("Incorrect level");
-    }
-
-    /**
-     * @notice The yield value is 10x value to consider decimal.
-     */
-    function getYield(uint256 _houseId, uint256 _level)
-        private
-        pure
-        returns (uint256)
-    {
-        if (_level == 1)
-            return
-                [205, 680, 2220, 7210, 25060, 78480, 263000, 815000][_houseId];
-        if (_level == 2)
-            return
-                [260, 820, 2770, 9050, 31410, 98440, 330000, 986000][_houseId];
-        if (_level == 3)
-            return
-                [325, 1050, 3480, 11350, 39440, 123230, 415000, 1293040][
-                    _houseId
-                ];
-        if (_level == 4)
-            return
-                [410, 1380, 4350, 14100, 49500, 156270, 524000, 1676400][
-                    _houseId
-                ];
-        if (_level == 5)
-            return
-                [510, 1670, 5580, 18040, 62160, 197590, 654000, 2130300][
-                    _houseId
-                ];
-        revert("Incorrect level");
     }
 
     function allHousesLength() external view returns (uint256) {
