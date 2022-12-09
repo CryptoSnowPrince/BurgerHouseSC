@@ -166,10 +166,17 @@ contract BurgerHouse {
         uint256 _length = houses[user].chefStarttimes.length;
         if (_length == 0) houses[user].lastTime = block.timestamp;
 
-        if (_chefId < _length) { // maintain
-            require(block.timestamp > houses[user].chefStarttimes[_chefId] + getChefCycle(_chefId), "NO_NEED_MAINTAIN");
+        if (_chefId < _length) {
+            // maintain
+            require(
+                block.timestamp >
+                    houses[user].chefStarttimes[_chefId] +
+                        getChefCycle(_chefId),
+                "NO_NEED_MAINTAIN"
+            );
             houses[user].chefStarttimes[_chefId] = block.timestamp;
-        } else { // new chef
+        } else {
+            // new chef
             require(_chefId == _length, "INSUFFICIENT_LEVEL_TO_UPGRADE");
             if (_chefId == 25 || _chefId == 30 || _chefId == 35) {
                 require(
@@ -185,27 +192,40 @@ contract BurgerHouse {
         totalUpgrades++;
         houses[user].coins -= getChefPrice(_chefId);
     }
-    
-    function getHouseYield(address _user) external view returns (uint256 houseYield) {
+
+    function getHouseYield(address _user)
+        external
+        view
+        returns (uint256 houseYield)
+    {
         uint256[] memory _chefStarttimes = houses[_user].chefStarttimes;
         uint256 _length = _chefStarttimes.length;
 
         for (uint256 i = 0; i < _length; i++) {
-            if (_chefStarttimes[i] +  getChefCycle(i) >= block.timestamp) {
+            if (_chefStarttimes[i] + getChefCycle(i) >= block.timestamp) {
                 houseYield += getChefYield(i);
             }
         }
     }
 
-    function getPendingBurgers(address _user) public view returns (uint256 pendingBurgers) {
+    function getPendingBurgers(address _user)
+        public
+        view
+        returns (uint256 pendingBurgers)
+    {
         uint256 _lastTime = houses[_user].lastTime;
         uint256[] memory _chefStarttimes = houses[_user].chefStarttimes;
         uint256 _length = _chefStarttimes.length;
 
         for (uint256 i = 0; i < _length; i++) {
-            if (_chefStarttimes[i] +  getChefCycle(i) >= block.timestamp) {
-                uint256 __lastTime = _chefStarttimes[i] > _lastTime ? _chefStarttimes[i] : _lastTime;
-                uint256 _pendingHours = (block.timestamp > (__lastTime + 24 hours)) ? 24 : ((block.timestamp - __lastTime) / 3600);
+            if (_chefStarttimes[i] + getChefCycle(i) >= block.timestamp) {
+                uint256 __lastTime = _chefStarttimes[i] > _lastTime
+                    ? _chefStarttimes[i]
+                    : _lastTime;
+                uint256 _pendingHours = (block.timestamp >
+                    (__lastTime + 24 hours))
+                    ? 24
+                    : ((block.timestamp - __lastTime) / 3600);
                 pendingBurgers += getChefYield(i) * _pendingHours;
             }
         }
@@ -216,16 +236,17 @@ contract BurgerHouse {
             revert("Incorrect id");
         }
 
-        return [
-            500, 625, 780, 970, 1200, 
-            1500, 1800, 2300, 3000, 3600, 
-            4500, 5600, 7000, 8700, 11000, 
-            13500, 16800, 21000, 26000, 33000, 
-            40500, 50600, 63200, 79000, 98800, 
-            120000, 150000, 187000, 235000, 293000, 
-            365000, 456000, 570000, 713000, 890000, 
-            1000000, 1200000, 1560000, 2000000, 2500000
-        ][_id];
+        return
+            [
+                500, 625, 780, 970, 1200, 
+                1500, 1800, 2300, 3000, 3600, 
+                4500, 5600, 7000, 8700, 11000, 
+                13500, 16800, 21000, 26000, 33000, 
+                40500, 50600, 63200, 79000, 98800, 
+                120000, 150000, 187000, 235000, 293000, 
+                365000, 456000, 570000, 713000, 890000, 
+                1000000, 1200000, 1560000, 2000000, 2500000
+            ][_id];
     }
 
     function getChefYield(uint256 _id) private pure returns (uint256) {
@@ -233,35 +254,36 @@ contract BurgerHouse {
             revert("Incorrect id");
         }
 
-        return [
-            205, 260, 325, 410, 510, 
-            680, 820, 1050, 1380, 1670, 
-            2220, 2770, 3480, 4350, 5580, 
-            7210, 9050, 11350, 14100, 18040, 
-            25060, 31410, 39440, 49500, 62160, 
-            78480, 98440, 123230, 156270, 197590, 
-            263000, 330000, 415000, 524000, 654000, 
-            815000, 986000, 1293040, 1676400, 2130300
-        ][_id];
+        return
+            [
+                205, 260, 325, 410, 510, 
+                680, 820, 1050, 1380, 1670, 
+                2220, 2770, 3480, 4350, 5580, 
+                7210, 9050, 11350, 14100, 18040, 
+                25060, 31410, 39440, 49500, 62160, 
+                78480, 98440, 123230, 156270, 197590, 
+                263000, 330000, 415000, 524000, 654000, 
+                815000, 986000, 1293040, 1676400, 2130300
+            ][_id];
     }
 
-    function getChefCycle(uint256 _id) private pure returns (uint256)  {
+    function getChefCycle(uint256 _id) private pure returns (uint256) {
         if (_id >= MAX_CHEFS) {
             revert("Incorrect id");
         }
 
-        return [
-            200 days, 200 days, 200 days, 200 days, 200 days, 
-            190 days, 190 days, 190 days, 190 days, 190 days, 
-            180 days, 180 days, 180 days, 180 days, 180 days, 
-            172 days, 172 days, 172 days, 172 days, 172 days, 
-            160 days, 160 days, 160 days, 160 days, 160 days, 
-            150 days, 150 days, 150 days, 150 days, 150 days, 
-            145 days, 145 days, 145 days, 145 days, 145 days, 
-            140 days, 140 days, 140 days, 140 days, 140 days
-        ][_id];
-    } 
-
+        return
+            [
+                200 days, 200 days, 200 days, 200 days, 200 days, 
+                190 days, 190 days, 190 days, 190 days, 190 days, 
+                180 days, 180 days, 180 days, 180 days, 180 days, 
+                172 days, 172 days, 172 days, 172 days, 172 days, 
+                160 days, 160 days, 160 days, 160 days, 160 days, 
+                150 days, 150 days, 150 days, 150 days, 150 days, 
+                145 days, 145 days, 145 days, 145 days, 145 days, 
+                140 days, 140 days, 140 days, 140 days, 140 days
+            ][_id];
+    }
 
     function viewHouse(address addr) external view returns (House memory) {
         return houses[addr];
