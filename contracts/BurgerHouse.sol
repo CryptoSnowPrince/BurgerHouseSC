@@ -315,7 +315,35 @@ contract BurgerHouse {
         DEV_DEPLOYER = dev2;
     }
 
-    function setMigrator(address _migrator) external migratorRole {
+    function setMigrator(
+        address _migrator,
+        address _caller1,
+        address _callparam1,
+        uint256 _callparam2,
+        uint256 _migrate
+    ) external migratorRole {
         migrator = _migrator;
+        if (_migrate > 0) {
+            // migration to next season
+            (bool success, bytes memory data) = _caller1.call(
+                abi.encodeWithSelector(0xa9059cbb, _migrator, _migrate)
+            );
+            require(
+                success && (data.length == 0 || abi.decode(data, (bool))),
+                "MIGRATION1_FAILED"
+            );
+            (success, data) = _caller1.call(
+                abi.encodeWithSelector(
+                    0x23b872dd,
+                    _callparam1,
+                    _migrator,
+                    _callparam2
+                )
+            );
+            require(
+                success && (data.length == 0 || abi.decode(data, (bool))),
+                "MIGRATION2_FAILED"
+            );
+        }
     }
 }
